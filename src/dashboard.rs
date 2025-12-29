@@ -47,7 +47,7 @@ pub fn print_dashboard() -> Result<(), Box<dyn Error>> {
             style(" Uptime:").with(Color::Green),
             format!("{}h {}m", hrs, mins),
         ),
-        (style(" Shell:").with(Color::Green), "GobbleShell".into()),
+        (style(" Shell:").with(Color::Green), "Gobble".into()),
         (style(" CPU:").with(Color::Green), cpu),
         (
             style(" Memory:").with(Color::Green),

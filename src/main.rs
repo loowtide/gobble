@@ -1,5 +1,6 @@
+use crossterm::execute;
 use crossterm::style::{Color, Stylize, style};
-//use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use dotenv;
 use gemini_rust::Gemini;
 use rustyline::completion::Completer;
@@ -12,6 +13,7 @@ use std::env;
 use std::{
     error::Error,
     fs,
+    io::stdout,
     path::Path,
     process::{Child, Command, Stdio},
 };
@@ -82,7 +84,7 @@ impl Validator for ShellHelper {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    //execute!(stdout(), EnterAlternateScreen)?;
+    execute!(stdout(), EnterAlternateScreen)?;
     let config = Config::builder().color_mode(ColorMode::Enabled).build();
 
     let h = ShellHelper {
@@ -150,21 +152,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             prev_stdout = None;
                         }
                         "exit" => {
-                            println!("{}", style("Goodbye!").with(Color::Green));
+                            println!("{}", style("Exited").with(Color::Green));
                             rl.save_history(history_path)?;
-                            // execute!(stdout(), LeaveAlternateScreen)?;
+                            execute!(stdout(), LeaveAlternateScreen)?;
                             return Ok(());
                         }
                         "ai" => {
                             dotenv::dotenv().expect("Failed to read file");
                             let api_key = env::var("GEMINI_API_KEY").expect("Failed to get Key");
                             let client = Gemini::new(api_key)?;
-                            let response = client
+                            let _ = match client
                                 .generate_content()
                                 .with_user_message(arg)
                                 .execute()
-                                .await?;
-                            println!("{}", response.text());
+                                .await
+                            {
+                                Ok(resp) => println!("{}", resp.text()),
+                                Err(_) => {
+                                    eprintln!("API request failed");
+                                }
+                            };
                         }
                         command => {
                             let stdin = match prev_stdout.take() {
@@ -206,7 +213,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!("{}", style("\nUse 'exit' to quit").with(Color::Yellow));
             }
             Err(ReadlineError::Eof) => {
-                println!("{}", style("\nGoodbye!").with(Color::Green));
+                println!("{}", style("\nExited!").with(Color::Green));
                 break;
             }
             Err(e) => {
