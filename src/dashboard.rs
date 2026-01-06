@@ -68,10 +68,6 @@ pub fn print_dashboard() -> Result<(), Box<dyn Error>> {
     }
 
     println!();
-    println!(
-        "{}",
-        style("Welcome to Gobble Shell!").with(Color::Green).bold()
-    );
     println!();
     return Ok(());
 }

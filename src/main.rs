@@ -1,8 +1,6 @@
 use crossterm::execute;
 use crossterm::style::{Color, Stylize, style};
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
-use dotenv;
-use gemini_rust::Gemini;
 use rustyline::completion::Completer;
 use rustyline::error::ReadlineError;
 use rustyline::highlight::{CmdKind, Highlighter, MatchingBracketHighlighter};
@@ -108,7 +106,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Err(err) => {
             eprintln!(
                 "{}",
-                style(format!("Gobbleshell: Error loading history: {}", err)).with(Color::Red)
+                style(format!("Gobble: Error loading history: {}", err)).with(Color::Red)
             );
         }
     }
@@ -138,12 +136,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     let Some(command) = parts.next() else {
                         continue;
                     };
-                    let args = parts;
-                    let arg: String = args.clone().collect();
+                    let args: Vec<&str> = parts.collect();
 
                     match command {
                         "cd" => {
-                            let new_dir = args.peekable().peek().map_or("/home", |x| *x);
+                            let new_dir = args.first().map_or("/home", |x| *x);
                             let root = Path::new(new_dir);
                             if let Err(e) = env::set_current_dir(root) {
                                 eprintln!("{}", style(e).with(Color::Red));
@@ -156,22 +153,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             rl.save_history(history_path)?;
                             execute!(stdout(), LeaveAlternateScreen)?;
                             return Ok(());
-                        }
-                        "ai" => {
-                            dotenv::dotenv().expect("Failed to read file");
-                            let api_key = env::var("GEMINI_API_KEY").expect("Failed to get Key");
-                            let client = Gemini::new(api_key)?;
-                            let _ = match client
-                                .generate_content()
-                                .with_user_message(arg)
-                                .execute()
-                                .await
-                            {
-                                Ok(resp) => println!("{}", resp.text()),
-                                Err(_) => {
-                                    eprintln!("API request failed");
-                                }
-                            };
                         }
                         command => {
                             let stdin = match prev_stdout.take() {
